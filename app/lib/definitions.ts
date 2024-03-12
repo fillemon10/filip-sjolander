@@ -26,6 +26,8 @@ export type Invoice = {
   status: 'pending' | 'paid';
 };
 
+
+
 export type Revenue = {
   month: string;
   revenue: number;
@@ -85,4 +87,37 @@ export type InvoiceForm = {
   customer_id: string;
   amount: number;
   status: 'pending' | 'paid';
+};
+
+export type PortfolioItem = {
+  id: string;
+  user_id: string;
+  title: string;
+  image_url: string;
+  body: string;
+  link: string;
+  date: string;
+  status: 'active' | 'inactive';
+};
+
+export type PortfolioTable = {
+  id: string;
+  user_id: string;
+  user_name: string;
+  title: string;
+  image_url: string;
+  body: string;
+  link: string;
+  date: string;
+  status: 'active' | 'inactive';
+};
+
+export type PortfolioItemForm = {
+  id: string;
+  title: string;
+  image_url: string;
+  body: string;
+  link: string;
+  status: 'active' | 'inactive';
+  date: string;
 };

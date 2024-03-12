@@ -1,7 +1,14 @@
 import '@/app/ui/global.css';
 import { inter } from '@/app/ui/fonts';
+import { Metadata } from 'next';
 
-
+export const metadata: Metadata = {
+  title: {
+    template: '%s | Filip Sjölander',
+    default: 'Filip Sjölander',
+  },
+  description: 'Filip Sjölander is a software engineer and web developer.',
+};
 export default function RootLayout({
   children,
 }: {

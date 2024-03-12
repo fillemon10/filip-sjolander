@@ -7,19 +7,22 @@ import {
   LatestInvoiceRaw,
   User,
   Revenue,
+  PortfolioTable,
 } from './definitions';
 import { formatCurrency } from './utils';
+import { unstable_noStore as noStore } from 'next/cache';
 
 export async function fetchRevenue() {
   // Add noStore() here to prevent the response from being cached.
+  noStore();
   // This is equivalent to in fetch(..., {cache: 'no-store'}).
 
   try {
     // Artificially delay a response for demo purposes.
     // Don't do this in production :)
 
-    // console.log('Fetching revenue data...');
-    // await new Promise((resolve) => setTimeout(resolve, 3000));
+    console.log('Fetching revenue data...');
+    await new Promise((resolve) => setTimeout(resolve, 3000));
 
     const data = await sql<Revenue>`SELECT * FROM revenue`;
 
@@ -33,6 +36,8 @@ export async function fetchRevenue() {
 }
 
 export async function fetchLatestInvoices() {
+  noStore();
+
   try {
     const data = await sql<LatestInvoiceRaw>`
       SELECT invoices.amount, customers.name, customers.image_url, customers.email, invoices.id
@@ -53,6 +58,8 @@ export async function fetchLatestInvoices() {
 }
 
 export async function fetchCardData() {
+  noStore();
+
   try {
     // You can probably combine these into a single SQL query
     // However, we are intentionally splitting them to demonstrate
@@ -92,6 +99,8 @@ export async function fetchFilteredInvoices(
   query: string,
   currentPage: number,
 ) {
+  noStore();
+
   const offset = (currentPage - 1) * ITEMS_PER_PAGE;
 
   try {
@@ -124,6 +133,8 @@ export async function fetchFilteredInvoices(
 }
 
 export async function fetchInvoicesPages(query: string) {
+  noStore();
+
   try {
     const count = await sql`SELECT COUNT(*)
     FROM invoices
@@ -145,6 +156,8 @@ export async function fetchInvoicesPages(query: string) {
 }
 
 export async function fetchInvoiceById(id: string) {
+  noStore();
+
   try {
     const data = await sql<InvoiceForm>`
       SELECT
@@ -170,6 +183,8 @@ export async function fetchInvoiceById(id: string) {
 }
 
 export async function fetchCustomers() {
+  noStore();
+
   try {
     const data = await sql<CustomerField>`
       SELECT
@@ -188,6 +203,8 @@ export async function fetchCustomers() {
 }
 
 export async function fetchFilteredCustomers(query: string) {
+  noStore();
+
   try {
     const data = await sql<CustomersTableType>`
 		SELECT
@@ -221,6 +238,7 @@ export async function fetchFilteredCustomers(query: string) {
 }
 
 export async function getUser(email: string) {
+
   try {
     const user = await sql`SELECT * FROM users WHERE email=${email}`;
     return user.rows[0] as User;
@@ -229,3 +247,94 @@ export async function getUser(email: string) {
     throw new Error('Failed to fetch user.');
   }
 }
+
+export async function fetchFilteredPortfolioItems(query: string, currentPage: number) {
+  noStore();
+
+  const offset = (currentPage - 1) * ITEMS_PER_PAGE;
+
+  try {
+    const portfolioItems = await sql<PortfolioTable>`
+      SELECT
+        portfolioitems.id,
+        portfolioitems.user_id,
+        portfolioitems.title,
+        portfolioitems.body,
+        portfolioitems.link,
+        portfolioitems.date,
+        portfolioitems.status,
+        portfolioitems.image_url,
+        users.name as name
+      FROM portfolioitems
+      Join users ON portfolioitems.user_id = users.id
+      WHERE
+        users.name ILIKE ${`%${query}%`} OR
+        portfolioitems.title ILIKE ${`%${query}%`} OR
+        portfolioitems.body ILIKE ${`%${query}%`} OR
+        portfolioitems.link ILIKE ${`%${query}%`} OR
+        portfolioitems.date::text ILIKE ${`%${query}%`}
+      ORDER BY portfolioitems.date DESC
+      LIMIT ${ITEMS_PER_PAGE} OFFSET ${offset}
+    `;
+
+    return portfolioItems.rows;
+  } catch (error) {
+    console.error('Database Error:', error);
+    throw new Error('Failed to fetch portfolio items.');
+  }
+}
+
+  export async function fetchPortfolioPages(query: string) {
+    noStore();
+
+    try {
+      const count = await sql`SELECT COUNT(*)
+    FROM portfolioitems
+    Join users ON portfolioitems.user_id = users.id
+    WHERE
+      users.name ILIKE ${`%${query}%`} OR
+      portfolioitems.title ILIKE ${`%${query}%`} OR
+      portfolioitems.body ILIKE ${`%${query}%`} OR
+      portfolioitems.link ILIKE ${`%${query}%`} OR
+      portfolioitems.date::text ILIKE ${`%${query}%`}
+  `;
+
+      const totalPages = Math.ceil(Number(count.rows[0].count) / ITEMS_PER_PAGE);
+      return totalPages;
+    } catch (error) {
+      console.error('Database Error:', error);
+      throw new Error('Failed to fetch total number of portfolio items.');
+    }
+  }
+
+  export async function fetchPortfolioItemById(id: string) {
+    noStore();
+
+    try {
+      const data = await sql<PortfolioTable>`
+      SELECT
+        portfolioitems.id,
+        portfolioitems.user_id,
+        portfolioitems.title,
+        portfolioitems.body,
+        portfolioitems.link,
+        portfolioitems.date,
+        portfolioitems.status,
+        portfolioitems.image_url,
+        users.name as name
+      FROM portfolioitems
+      Join users ON portfolioitems.user_id = users.id
+      WHERE portfolioitems.id = ${id};
+    `;
+
+      const portfolioItem = data.rows.map((item) => ({
+        ...item,
+      }));
+
+      return portfolioItem[0];
+    } catch (error) {
+      console.error('Database Error:', error);
+      throw new Error('Failed to fetch portfolio item.');
+    }
+  }
+  
